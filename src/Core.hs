@@ -29,3 +29,9 @@ newtype StepName = StepName Text
 
 newtype Image = Image Text
   deriving (Eq, Show)
+
+stepNameToText :: StepName -> Text
+stepNameToText (StepName step) = step
+
+imageToText :: Image -> Text
+imageToText (Image image) = image
