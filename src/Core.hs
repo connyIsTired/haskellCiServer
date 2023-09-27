@@ -68,7 +68,12 @@ exitCodeToStepResult exit =
 progress :: Build -> IO Build
 progress build = 
   case build.state of
-    BuildReady -> undefined
+    BuildReady -> 
+      case buildHasNextStep build of 
+        Left result -> 
+          pure $ build{state = BuildFinished result}
+        Right step -> 
+          pure $ build{state = BuildRunning}
     BuildRunning -> undefined
     BuildFinished _ -> 
       pure build
