@@ -1,6 +1,7 @@
 module Core where
 
 import RIO
+import qualified RIO.Map as Map
 
 data Pipeline 
   = Pipeline
@@ -20,8 +21,14 @@ data Build
    = Build 
     { pipeline :: Pipeline 
     , state :: BuildState
+    , completedSteps :: Map StepName StepResult
     }
     deriving (Eq, Show)
+
+data StepResult 
+  = StepFailed ContainerExitCode
+  | StepSucceeded
+  deriving (Eq, Show)
 
 data BuildState
   = BuildReady
@@ -35,9 +42,12 @@ data BuildResult
   deriving (Eq, Show)
 
 newtype StepName = StepName Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 newtype Image = Image Text
+  deriving (Eq, Show)
+
+newtype ContainerExitCode = ContainerExitCode Int
   deriving (Eq, Show)
 
 stepNameToText :: StepName -> Text
@@ -45,3 +55,25 @@ stepNameToText (StepName step) = step
 
 imageToText :: Image -> Text
 imageToText (Image image) = image
+
+exitCodeToInt :: ContainerExitCode -> Int
+exitCodeToInt (ContainerExitCode code) = code
+
+exitCodeToStepResult :: ContainerExitCode -> StepResult
+exitCodeToStepResult exit = 
+  if exitCodeToInt exit == 0 
+    then StepSucceeded
+    else StepFailed exit
+
+progress :: Build -> IO Build
+progress build = 
+  case build.state of
+    BuildReady -> undefined
+    BuildRunning -> undefined
+    BuildFinished _ -> 
+      pure build
+
+buildHasNextStep :: Build -> Either BuildResult Step
+buildHasNextStep build = 
+  undefined
+

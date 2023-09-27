@@ -25,6 +25,7 @@ testBuild :: Build
 testBuild = Build
   { pipeline = testPipeline
   , state = BuildReady
+  , completedSteps = mempty
   }
 
 main :: IO ()
