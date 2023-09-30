@@ -1,6 +1,7 @@
 module Docker where
 
 import RIO
+import qualified Network.HTTP.Simple as HTTP
 
 data CreateContainerOptions
   = CreateContainerOptions
@@ -15,4 +16,13 @@ newtype ContainerExitCode = ContainerExitCode Int
 
 
 createContainer :: CreateContainerOptions -> IO ()
-createContainer options = undefined
+createContainer options = do
+  let body = ()
+  let req = HTTP.defaultRequest 
+          & HTTP.setRequestPath "/v1.40/containers/create"
+          & HTTP.setRequestMethod "POST"
+          & HTTP.setRequestBodyJSON body
+  res <- HTTP.httpBS req 
+
+  traceShowIO res
+
