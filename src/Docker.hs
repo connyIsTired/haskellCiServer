@@ -13,6 +13,11 @@ data CreateContainerOptions
     { image :: Image
     }
 
+data Service = Service
+  { createContainer :: CreateContainerOptions -> IO ContainerId 
+  , startContainer :: ContainerId -> IO ()
+  }
+
 newtype Image = Image Text
   deriving (Eq, Show)
 
@@ -31,6 +36,13 @@ imageToText (Image image) = image
 exitCodeToInt :: ContainerExitCode -> Int
 exitCodeToInt (ContainerExitCode code) = code
 
+createService :: IO Service 
+createService = do 
+  pure Service 
+    { createContainer = createContainer_
+    , startContainer = startContainer_
+    }
+
 parseResponse :: HTTP.Response ByteString -> (Aeson.Value -> Aeson.Types.Parser a) -> IO a 
 parseResponse res parser = do 
   let result = do 
@@ -41,8 +53,8 @@ parseResponse res parser = do
     Left e -> throwString e 
     Right status -> pure status
 
-createContainer :: CreateContainerOptions -> IO ContainerId
-createContainer options = do
+createContainer_ :: CreateContainerOptions -> IO ContainerId
+createContainer_ options = do
   manager <- Socket.newManager "/var/run/docker.sock"
   let image = imageToText options.image
   let body = Aeson.object
@@ -63,8 +75,8 @@ createContainer options = do
   res <- HTTP.httpBS req 
   parseResponse res parser
 
-startContainer :: ContainerId -> IO ()
-startContainer container = do 
+startContainer_ :: ContainerId -> IO ()
+startContainer_ container = do 
   manager <- Socket.newManager "/var/run/docker.sock"
 
   let path = "/v1.43/containers/" <> containerIdToText container <> "/start"
