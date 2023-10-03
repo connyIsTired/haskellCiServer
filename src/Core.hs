@@ -55,15 +55,9 @@ newtype StepName = StepName Text
 stepNameToText :: StepName -> Text
 stepNameToText (StepName step) = step
 
-imageToText :: Docker.Image -> Text
-imageToText (Docker.Image image) = image
-
-exitCodeToInt :: Docker.ContainerExitCode -> Int
-exitCodeToInt (Docker.ContainerExitCode code) = code
-
 exitCodeToStepResult :: Docker.ContainerExitCode -> StepResult
 exitCodeToStepResult exit = 
-  if exitCodeToInt exit == 0 
+  if Docker.exitCodeToInt exit == 0 
     then StepSucceeded
     else StepFailed exit
 

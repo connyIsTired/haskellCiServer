@@ -19,4 +19,4 @@ newManager fp =
       Client.Internal.makeConnection
         (SBS.recv s 8096)
         (SBS.sendAll s)
-        (S.close s)
+        (S.close s)
