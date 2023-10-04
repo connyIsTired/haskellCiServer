@@ -3,6 +3,7 @@ module Main where
 import qualified Docker
 
 import RIO
+import  Test.Hspec
 import Core
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial 
 
@@ -31,4 +32,17 @@ testBuild = Build
   }
 
 main :: IO ()
-main = pure ()
+main = hspec do 
+  describe "Quad CI" do 
+    it "should run a build (success)" do 
+      1 `shouldBe` 1
+
+runBuild :: Docker.Service -> Build -> IO Build 
+runBuild docker build = do 
+  newBuild <- Core.progress docker build 
+  case newBuild.state of 
+    BuildFinished _ -> 
+      pure newBuild
+    _ -> do 
+      threadDelay (1 * 1000 * 1000)
+      runBuild docker newBuild
