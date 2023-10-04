@@ -6,6 +6,7 @@ import RIO
 import  Test.Hspec
 import Core
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial 
+import qualified RIO.Map as Map
 
 makeStep name image commands
   = Step
@@ -33,9 +34,10 @@ testBuild = Build
 
 main :: IO ()
 main = hspec do 
+  docker <- runIO Docker.createService
   describe "Quad CI" do 
     it "should run a build (success)" do 
-      1 `shouldBe` 1
+      testRunSuccess docker
 
 runBuild :: Docker.Service -> Build -> IO Build 
 runBuild docker build = do 
@@ -46,3 +48,10 @@ runBuild docker build = do
     _ -> do 
       threadDelay (1 * 1000 * 1000)
       runBuild docker newBuild
+
+testRunSuccess :: Docker.Service -> IO ()
+testRunSuccess docker = do  
+  result <- runBuild docker testBuild 
+  result.state `shouldBe` BuildFinished BuildSucceeded 
+  Map.elems result.completedSteps `shouldBe` [StepSucceeded, StepSucceeded]
+
