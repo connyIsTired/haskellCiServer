@@ -13,5 +13,15 @@ data Service
 createService :: Docker.Service -> IO Service 
 createService docker = do 
   pure Service 
-    { runBuild = undefined 
+    { runBuild = runBuild_ docker 
     }
+
+runBuild_ :: Docker.Service -> Build -> IO Build 
+runBuild_ docker build = do
+  newBuild <- Core.progress docker build 
+  case newBuild.state of 
+    BuildFinished _ ->
+      pure newBuild
+    _ -> do 
+      threadDelay (1 * 1000 * 1000)
+      runBuild_ docker newBuild
