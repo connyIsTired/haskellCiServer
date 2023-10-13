@@ -1,9 +1,10 @@
 module Main where
 
 import qualified Docker
+import qualified Runner
 
 import RIO
-import  Test.Hspec
+import Test.Hspec
 import Core
 import qualified RIO.NonEmpty.Partial as NonEmpty.Partial 
 import qualified RIO.Map as Map
@@ -20,25 +21,13 @@ makePipeline :: [Step] -> Pipeline
 makePipeline steps =
   Pipeline { steps = NonEmpty.Partial.fromList steps }
 
-testPipeline :: Pipeline
-testPipeline = makePipeline
-  [ makeStep "First step" "ubuntu" ["date"]
-  , makeStep "Second step" "ubuntu" ["uname -r"]
-  ]
-
-testBuild :: Build
-testBuild = Build
-  { pipeline = testPipeline
-  , state = BuildReady
-  , completedSteps = mempty
-  }
-
 main :: IO ()
 main = hspec do 
   docker <- runIO Docker.createService
+  runner <- runIO $ Runner.createService docker
   beforeAll cleanupDocker $ describe "Quad CI" do
     it "should run a build (success)" do 
-      testRunSuccess docker
+      testRunSuccess runner
 
 cleanupDocker :: IO ()
 cleanupDocker = void do 
@@ -54,9 +43,14 @@ runBuild docker build = do
       threadDelay (1 * 1000 * 1000)
       runBuild docker newBuild
 
-testRunSuccess :: Docker.Service -> IO ()
-testRunSuccess docker = do  
-  result <- runBuild docker testBuild 
+testRunSuccess :: Runner.Service -> IO ()
+testRunSuccess runner = do  
+  build <- runner.prepareBuild $ makePipeline 
+              [ makeStep "First step" "ubuntu" ["date"]
+              , makeStep " Second step" "ubuntu" ["uname -r"]
+              ]
+  result <- runner.runBuild build
+
   result.state `shouldBe` BuildFinished BuildSucceeded 
   Map.elems result.completedSteps `shouldBe` [StepSucceeded, StepSucceeded]
 
