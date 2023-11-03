@@ -16,7 +16,14 @@ data CreateContainerOptions
 data Service = Service
   { createContainer :: CreateContainerOptions -> IO ContainerId 
   , startContainer :: ContainerId -> IO ()
+  , containerStatus :: ContainerId -> IO ContainerStatus
   }
+
+data ContainerStatus
+  = ContaineRunning
+  | ContainerExited ContainerExitCode 
+  | ContainerOther Text 
+  deriving (Eq, Show)
 
 newtype Image = Image Text
   deriving (Eq, Show)
@@ -41,6 +48,7 @@ createService = do
   pure Service 
     { createContainer = createContainer_
     , startContainer = startContainer_
+    , containerStatus = undefined
     }
 
 parseResponse :: HTTP.Response ByteString -> (Aeson.Value -> Aeson.Types.Parser a) -> IO a 
