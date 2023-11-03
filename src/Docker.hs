@@ -20,7 +20,7 @@ data Service = Service
   }
 
 data ContainerStatus
-  = ContaineRunning
+  = ContainerRunning
   | ContainerExited ContainerExitCode 
   | ContainerOther Text 
   deriving (Eq, Show)
@@ -99,3 +99,20 @@ startContainer_ makeReq container = do
           & HTTP.setRequestMethod "POST"
 
   void $ HTTP.httpBS req 
+
+containerStatus_ :: RequestBuilder -> ContainerId -> IO ContainerStatus
+containerStatus_ makeReq container = do 
+  let parser = Aeson.withObject "container-inspect" $ \o -> do 
+        state <- o .: "State"
+        status <- state .: "Status"
+        case status of 
+          "running" -> pure ContainerRunning
+          "exited" -> do 
+            code <- state .: "ExitCode"
+            pure $ ContainerExited (ContainerExitCode code)
+          other -> pure $ ContainerOther other
+
+  let req = makeReq $ "/containers/" <> containerIdToText container <> "/json"
+
+  res <- HTTP.httpBS req 
+  parseResponse res parser
