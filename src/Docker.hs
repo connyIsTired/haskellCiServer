@@ -11,6 +11,7 @@ import Prelude (putStr)
 data CreateContainerOptions
   = CreateContainerOptions
     { image :: Image
+    , script :: Text
     }
 
 data Service = Service
@@ -57,7 +58,7 @@ createService = do
   pure Service 
     { createContainer = createContainer_ makeReq
     , startContainer = startContainer_ makeReq
-    , containerStatus = undefined
+    , containerStatus = containerStatus_ makeReq
     }
 
 parseResponse :: HTTP.Response ByteString -> (Aeson.Value -> Aeson.Types.Parser a) -> IO a 
@@ -78,8 +79,9 @@ createContainer_ makeReq options = do
         [ ("Image", Aeson.toJSON image)
         , ("Tty", Aeson.toJSON True)
         , ("Labels", Aeson.object [("quad", "")])
-        , ("Cmd", Aeson.String "echo hello kassie")
         , ("Entrypoint", Aeson.toJSON [Aeson.String "/bin/sh", "-c"])
+        , ("Cmd", "echo \"$QUAD_SCRIPT\" | /bin/sh")
+        , ("Env" , Aeson.toJSON ["QUAD_SCRIPT="<>options.script])
         ]
   let req = makeReq "/containers/create"
           & HTTP.setRequestMethod "POST"

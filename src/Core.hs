@@ -4,7 +4,8 @@ import qualified Docker
 import RIO
 import qualified RIO.Map as Map
 import qualified RIO.List as List
-import qualified Core as build
+import qualified RIO.NonEmpty as NonEmpty 
+import qualified RIO.Text as Text 
 
 data Pipeline 
   = Pipeline
@@ -72,7 +73,12 @@ progress docker build =
         Left result -> 
           pure $ build{state = BuildFinished result}
         Right step -> do
-          let options = Docker.CreateContainerOptions step.image 
+          let script = Text.unlines $ ["set-ex"] <> NonEmpty.toList step.commands
+          let options = 
+                Docker.CreateContainerOptions 
+                  { image = step.image 
+                  , script = script
+                  }
           container <- docker.createContainer options 
           docker.startContainer container
 
@@ -84,7 +90,7 @@ progress docker build =
       status <- docker.containerStatus state.container 
 
       case status of  
-        Docker.ContaineRunning -> 
+        Docker.ContainerRunning -> 
           pure build
         Docker.ContainerExited exit -> do
           let result = exitCodeToStepResult exit 
