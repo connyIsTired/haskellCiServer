@@ -12,6 +12,7 @@ data CreateContainerOptions
   = CreateContainerOptions
     { image :: Image
     , script :: Text
+    , volume :: Volume
     }
 
 data Service = Service
@@ -83,6 +84,7 @@ createContainer_ :: RequestBuilder -> CreateContainerOptions -> IO ContainerId
 createContainer_ makeReq options = do
   manager <- Socket.newManager "/var/run/docker.sock"
   let image = imageToText options.image
+  let bind = volumeToText options.volume <> ":/app"
   let body = Aeson.object
         [ ("Image", Aeson.toJSON image)
         , ("Tty", Aeson.toJSON True)
@@ -90,6 +92,8 @@ createContainer_ makeReq options = do
         , ("Entrypoint", Aeson.toJSON [Aeson.String "/bin/sh", "-c"])
         , ("Cmd", "echo \"$QUAD_SCRIPT\" | /bin/sh")
         , ("Env" , Aeson.toJSON ["QUAD_SCRIPT="<>options.script])
+        , ("WorkingDir", "/app")
+        , ("HostConfig", Aeson.object [( "Binds", Aeson.toJSON [bind])])
         ]
   let req = makeReq "/containers/create"
           & HTTP.setRequestMethod "POST"

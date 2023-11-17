@@ -38,6 +38,8 @@ cleanupDocker :: IO ()
 cleanupDocker = void do 
   Process.readProcessStdout "docker rm -f $(docker ps -aq --filter \"label=quad\")"
 
+  Process.readProcessStdout "docker volume rm -f $(docker volume ls -q --filter \"label=quad\")"
+
 runBuild :: Docker.Service -> Build -> IO Build 
 runBuild docker build = do 
   newBuild <- Core.progress docker build 

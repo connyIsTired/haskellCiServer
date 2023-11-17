@@ -79,6 +79,7 @@ progress docker build =
                 Docker.CreateContainerOptions 
                   { image = step.image 
                   , script = script
+                  , volume = build.volume
                   }
           container <- docker.createContainer options 
           docker.startContainer container
